@@ -122,6 +122,7 @@ func dbBuild(connConfig *pgx.ConnConfig) {
 		faction VARCHAR(255),
 		achievement_points VARCHAR(255),
 		profile_url VARCHAR(255),
+  		thumbnail_url VARCHAR(255),
 		profile_banner VARCHAR(255),
 		created_at TIMESTAMP DEFAULT now()
 	);
