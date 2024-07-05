@@ -7,9 +7,9 @@ import (
 )
 
 func InitConfigDB() {
-	viper.SetConfigName("db")                                        // Имя файла конфигурации без расширения
-	viper.SetConfigType("yaml")                                      // Тип файла конфигурации
-	viper.AddConfigPath("$HOME/goproject/wow-guild-website/configs") // Путь к директории с конфигурацией
+	viper.SetConfigName("db")                                   // Имя файла конфигурации без расширения
+	viper.SetConfigType("yaml")                                 // Тип файла конфигурации
+	viper.AddConfigPath("$HOME/goproject/wow-guild-db/configs") // Путь к директории с конфигурацией
 	// Чтение конфигурации
 	err := viper.ReadInConfig()
 	if err != nil {
