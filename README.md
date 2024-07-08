@@ -1,5 +1,5 @@
 # Задача приложения
-Создание БД и обновление данных об игроках гильдии через API Raider io по крон задаче раз в день.
+Создание БД и работе с БД, в том числе обновление данных об игроках гильдии через API Raider io
 
 ### Настройка интервала обновления данных
 В файле main.go
@@ -9,29 +9,17 @@
 Используем os.UserHomeDir() и основной путь /kvd/logs/ т.е создаем папку kvd в домашнем котологе пользователя куда будут писаться логи
 
 ### Docker контейнеры
-Запускаем **docker-compose.yml** из папки deployments/docker/
->:warning: Важно указать сильный логин и пароль в полях 
->**POSTGRES_USER** и **POSTGRES_PASSWORD**
->**PGADMIN_DEFAULT_EMAIL** и **PGADMIN_DEFAULT_PASSWORD**
-- запуск находясь в котологе с файлом
-`docker compose up -d`
+Создаем сеть в которой наши контейнеры будут общаться
+`docker network create wowguild`
+
+Запуск БД
+`docker run --name yanlex-wow-guild-postgres --network wowguild -e POSTGRES_USER=user-name -e POSTGRES_PASSWORD=strong-password -v yanlex-wow-guild-postgres:/var/lib/postgresql/data -p 5432:5432 -d postgres:latest`
+
+Запуск приложения
+`docker build -t yanlex-wow-guild-updater .`
+`docker run --network wowguild -d --name yanlex-wow-guild-updater -v yanlex-wow-guild-db-updater:/var/lib/postgresql/data yanlex-wow-guild-updater`
 
 ### Настраиваем конфигурацию приложения
 :warning: Проверить настройки в configs/db.yaml
 - в переменной `raiderio_api_url` должна быть ссылка на вашу гильдию
-- в переменной `url` там где `"postgres://user-name:strong-password@localhost:5432"` нужно заменить user-name:strong-password на актуальные из docker-compose.yml
-
-:warning: Файл configs/config.go 
-- важно указать правильный путь до каталога `configs` в переменной `viper.AddConfigPath("$HOME/goproject/wow-guild-website/configs") `
-
-### Запускаем скрипт создания структуры БД
-Скрипт **deploy.go** лежит в папке deployments/db/
-`go run deploy.go`
-
-### Запуск приложения в менеджере процессов PM2
-- глобально ставим pm2
-`npm install pm2 -g`
--  после всех настроек собираем приложение
-`go build main.go`
-- запускаем приложение
-`pm2 start ./main`
+- в переменной `url` там где `"postgres://user-name:strong-password@localhost:5432"` нужно заменить `user-name:strong-password@localhost` на актуальные из команды запуска

@@ -1,0 +1,30 @@
+version: '3'
+services:
+  wow-postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    ports:
+      - "${HOST_DB_PORT}:${CONTAINER_DB_PORT}"
+    networks:
+      - ${DB_NETWORK}
+
+  goapp:
+    build: .
+    depends_on:
+      - wow-postgres
+    volumes:
+      - updater:/app/data
+    networks:
+      - ${DB_NETWORK}
+
+networks:
+  wowguild:
+    external: true
+
+volumes:
+  postgres:
+  updater:

@@ -23,7 +23,6 @@ func Init() {
 		log.Fatalf("Configuration parsing error: %v\n", err)
 	}
 	dbBuild(connConfig)
-	defer fmt.Println("<->-- DB Create Structure DONE --<->")
 }
 
 func dbBuild(connConfig *pgx.ConnConfig) {
@@ -33,10 +32,10 @@ func dbBuild(connConfig *pgx.ConnConfig) {
 		log.Fatal(err)
 	}
 
-	logFilePath := fmt.Sprintf("%s/kvd/logs/deploy/deploy.log", homeDir)
+	logFilePath := fmt.Sprintf("%s/kvd/logs/deploy.log", homeDir)
 
 	// Создание всех необходимых каталогов, если они еще не существуют
-	err = os.MkdirAll(fmt.Sprintf("%s/kvd/logs/deploy", homeDir), 0755)
+	err = os.MkdirAll(fmt.Sprintf("%s/kvd/logs", homeDir), 0755)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -62,14 +61,14 @@ func dbBuild(connConfig *pgx.ConnConfig) {
 
 	// Проверяем, существует ли база данных
 	checkDBExistsQuery := fmt.Sprintf("SELECT datname FROM pg_database WHERE datname = '%s'", dbName)
-	var exists string // Изменено с bool на string
-	err = conn.QueryRow(context.Background(), checkDBExistsQuery).Scan(&exists)
+	var existsDB string // Изменено с bool на string
+	err = conn.QueryRow(context.Background(), checkDBExistsQuery).Scan(&existsDB)
 	if err != nil && err != pgx.ErrNoRows {
 		log.Fatalf("Error checking if database exists: %v\n", err)
 		logger.Fatalf("Error checking if database exists: %v\n", err)
 	}
 
-	if exists == "" { // Проверяем, что exists пустая строка, что означает отсутствие базы данных
+	if existsDB == "" { // Проверяем, что exists пустая строка, что означает отсутствие базы данных
 		// SQL запрос для создания БД
 		createDBQuery := fmt.Sprintf("CREATE DATABASE %s", dbName)
 
@@ -77,15 +76,13 @@ func dbBuild(connConfig *pgx.ConnConfig) {
 		_, err = conn.Exec(context.Background(), createDBQuery)
 		if err != nil {
 			log.Fatalf("Failed to create database: %v\n", err)
-			logger.Printf("Failed to create database: %s %v\n", dbName, err)
+			logger.Fatalf("Failed to create database: %s %v\n", dbName, err)
 		}
 		logger.Printf("The database: %s has been successfully created", dbName)
-		fmt.Printf("The database: %s has been successfully created\n", dbName)
+		log.Printf("The database: %s has been successfully created\n", dbName)
 	} else {
 		logger.Printf("The database: %s already exists", dbName)
-		logger.Println("YOU NEED TO DELETE THE DATABASE BEFORE CREATING IT AGAIN")
-		fmt.Println("YOU NEED TO DELETE THE DATABASE BEFORE CREATING IT AGAIN")
-		log.Fatalf("The database: %s already exists\n", dbName)
+		log.Printf("The database: %s already exists\n", dbName)
 		// Удаление комментариев о необходимости удаления базы данных перед созданием, так как это не требуется
 	}
 
@@ -110,30 +107,29 @@ func dbBuild(connConfig *pgx.ConnConfig) {
 		created_at TIMESTAMP DEFAULT now()
 	);
 	CREATE TABLE IF NOT EXISTS members (
-		id SERIAL PRIMARY KEY,
-		rank VARCHAR(255),
-		name VARCHAR(255) NOT NULL,
-		mythic_plus_scores_by_season VARCHAR(255) DEFAULT '',
-		guild VARCHAR(255),
-		realm VARCHAR(255) DEFAULT '',
-		race VARCHAR(255),
-		class VARCHAR(255),
-		gender VARCHAR(255),
-		faction VARCHAR(255),
-		achievement_points VARCHAR(255),
-		profile_url VARCHAR(255),
-  		thumbnail_url VARCHAR(255) DEFAULT '',
-		profile_banner VARCHAR(255),
-		created_at TIMESTAMP DEFAULT now()
-	);
+    id SERIAL PRIMARY KEY,
+    rank INTEGER,
+    name VARCHAR(255) NOT NULL,
+    mythic_plus_scores_by_season INTEGER DEFAULT 0,
+    guild VARCHAR(255),
+    realm VARCHAR(255) DEFAULT '',
+    race VARCHAR(255),
+    class VARCHAR(255),
+    gender VARCHAR(255),
+    faction VARCHAR(255),
+    achievement_points INTEGER,
+    profile_url VARCHAR(255),
+    thumbnail_url VARCHAR(255) DEFAULT '',
+    profile_banner VARCHAR(255),
+    created_at TIMESTAMP DEFAULT now()
+);
+
 	`
 
 	_, err = conn.Exec(context.Background(), createTableAndRow)
 	if err != nil {
-		logger.Fatalf("Failed to create table: %v\n", err)
 		log.Fatalf("Failed to create table: %v\n", err)
+		logger.Fatalf("Failed to create table: %v\n", err)
 	}
-	logger.Println("Tables and columns have been created successfully")
-	fmt.Printf("Tables and columns have been created successfully\n")
 	defer filldb.FirstFillDB()
 }

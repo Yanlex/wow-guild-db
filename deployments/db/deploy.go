@@ -1,4 +1,4 @@
-package main
+package deploy
 
 import (
 	"kvd/deployments/db/structure"
@@ -6,9 +6,10 @@ import (
 
 // Запускаем создание структуры БД и заполнение стартовой информацией о гильдии с АПИ raid.io через defer firstfilldb.FirstFillDB()
 func init() {
-	structure.Init()
+
 }
 
-func main() {
+func Deploy() {
+	structure.Init()
 
 }

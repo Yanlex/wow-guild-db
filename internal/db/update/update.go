@@ -46,10 +46,10 @@ func init() {
 		log.Fatal(err)
 	}
 
-	logFilePath := fmt.Sprintf("%s/kvd/logs/update/updatePlayers.log", homeDir)
+	logFilePath := fmt.Sprintf("%s/kvd/logs/updatePlayers.log", homeDir)
 
 	// Создание всех необходимых каталогов, если они еще не существуют
-	err = os.MkdirAll(fmt.Sprintf("%s/kvd/logs/update", homeDir), 0755)
+	err = os.MkdirAll(fmt.Sprintf("%s/kvd/logs", homeDir), 0755)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func init() {
 }
 
 type Player struct {
-	rank              string
+	rank              int
 	name              string
 	guild             string
 	realm             string
@@ -71,21 +71,21 @@ type Player struct {
 	class             string
 	gender            string
 	faction           string
-	achievementPoints string
+	achievementPoints int
 	profileURL        string
 	profileBanner     string
 }
 type PlayerDB struct {
-	rank                         string
+	rank                         int
 	name                         string
-	mythic_plus_scores_by_season string
+	mythic_plus_scores_by_season int
 	guild                        string
 	realm                        string
 	race                         string
 	class                        string
 	gender                       string
 	faction                      string
-	achievementPoints            string
+	achievementPoints            int
 	profileURL                   string
 	profileBanner                string
 }
@@ -100,7 +100,7 @@ func UpdateAllPlayers() {
 	}
 
 	// Получаем из Базы данных таблицу members
-	rows, err := pool.Query(context.Background(), "SELECT  rank, name, mythic_plus_scores_by_season,  guild, realm, race, class, gender, faction, achievement_points, profile_url, profile_banner FROM members")
+	rows, err := pool.Query(context.Background(), "SELECT  rank, name, mythic_plus_scores_by_season, guild, realm, race, class, gender, faction, achievement_points, profile_url, profile_banner FROM members")
 	if err != nil {
 		log.Fatalf("Query error: %v\n", err)
 	}
@@ -177,7 +177,7 @@ func UpdateAllPlayers() {
 		profile_banner := gjson.Get(resp, profileBannerPath)
 
 		player := Player{
-			rank:              rank.String(),
+			rank:              int(rank.Int()),
 			name:              name.String(),
 			guild:             guild,
 			realm:             realm.String(),
@@ -185,7 +185,7 @@ func UpdateAllPlayers() {
 			class:             class.String(),
 			gender:            gender.String(),
 			faction:           faction.String(),
-			achievementPoints: achievement_points.String(),
+			achievementPoints: int(achievement_points.Int()),
 			profileURL:        profile_url.String(),
 			profileBanner:     profile_banner.String(),
 		}
@@ -231,10 +231,10 @@ func UpdateAllPlayers() {
 
 					// Достаем текущий рейтинг из gjson.Response
 					playerRio := gjson.Get(playerResp, "mythic_plus_scores_by_season.#.scores.all")
-					var currRioRating string
+					var currRioRating int
 					// Конвертируем gjson.Response в string
 					for _, s := range playerRio.Array() {
-						currRioRating = s.String()
+						currRioRating = int(s.Int())
 					}
 
 					// fmt.Println("О, привет:" + player.name + " " + p.name)
@@ -244,7 +244,7 @@ func UpdateAllPlayers() {
 						var updates []string
 
 						if player.rank != p.rank {
-							updates = append(updates, fmt.Sprintf(`rank = '%s'`, player.rank)) // Использование двойных кавычек для строки и %s для интерполяции
+							updates = append(updates, fmt.Sprintf(`rank = '%d'`, player.rank)) // Использование двойных кавычек для строки и %s для интерполяции
 						}
 						if player.guild != guild {
 							updates = append(updates, fmt.Sprintf("guild = '%s'", player.guild)) // Аналогично
@@ -260,14 +260,14 @@ func UpdateAllPlayers() {
 							updates = append(updates, fmt.Sprintf("gender = '%s'", player.gender)) // Аналогично
 						}
 						if player.achievementPoints != p.achievementPoints {
-							updates = append(updates, fmt.Sprintf("achievement_points = '%s'", player.achievementPoints)) // Аналогично
+							updates = append(updates, fmt.Sprintf("achievement_points = '%d'", player.achievementPoints)) // Аналогично
 						}
 						if player.profileURL != p.profileURL {
 							updates = append(updates, fmt.Sprintf("profile_url = '%s'", player.profileURL)) // Аналогично
 						}
 
 						if p.mythic_plus_scores_by_season != currRioRating {
-							updates = append(updates, fmt.Sprintf("mythic_plus_scores_by_season = '%s'", currRioRating))
+							updates = append(updates, fmt.Sprintf("mythic_plus_scores_by_season = '%d'", currRioRating))
 						}
 
 						if len(updates) > 0 {

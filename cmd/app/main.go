@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	config "kvd/configs"
+	deploy "kvd/deployments/db"
 	"kvd/internal/db/update"
+
 	"log"
 	"os"
 	"os/signal"
@@ -19,6 +21,8 @@ func updatePlayersHandler() {
 }
 
 func init() {
+	fmt.Println("DB UPDATER STARTED")
+
 	config.InitConfigDB()
 
 	// Крон планировщик
@@ -34,7 +38,7 @@ func init() {
 	s := gocron.NewScheduler(est)
 
 	// Планирование задачи
-	_, _ = s.Every(1).Day().At("13:42").Do(updatePlayersHandler)
+	_, _ = s.Every(1).Day().At("02:30").Do(updatePlayersHandler)
 
 	// Запуск планировщика асинхронно
 	s.StartAsync()
@@ -43,12 +47,21 @@ func init() {
 // var err error
 
 func main() {
-	fmt.Println("DB UPDATER STARTED")
+
+	timerDeploy := make(chan bool)
+
+	go func() {
+		time.Sleep(10 * time.Second)
+		timerDeploy <- true
+	}()
 
 	// Создаем канал для сигналов
 	signals := make(chan os.Signal, 1)
 	// Регистрируем канал для получения сигналов
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+
+	<-timerDeploy
+	deploy.Deploy()
 
 	// Блокируемся до получения сигнала
 	sig := <-signals
