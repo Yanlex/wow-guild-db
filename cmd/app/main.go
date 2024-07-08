@@ -49,6 +49,7 @@ func init() {
 func main() {
 
 	timerDeploy := make(chan bool)
+	timerMplus := make(chan bool)
 
 	go func() {
 		time.Sleep(10 * time.Second)
@@ -63,6 +64,13 @@ func main() {
 	<-timerDeploy
 	deploy.Deploy()
 
+	go func() {
+		time.Sleep(25 * time.Second)
+		timerMplus <- true
+	}()
+
+	<-timerMplus
+	update.UpdateAllPlayers()
 	// Блокируемся до получения сигнала
 	sig := <-signals
 	fmt.Println("Received signal:", sig)
