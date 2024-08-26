@@ -202,7 +202,7 @@ func UpdateAllPlayers() {
 				// fmt.Println(p.rank, p.name, p.guild, p.realm, p.race, p.class, p.gender, p.faction, p.achievementPoints, p.profileURL, p.profileBanner)
 				if player.name == p.name {
 					// time sleep нужыен из за ограничения запросов на стороний API
-					time.Sleep(220 * time.Millisecond)
+					time.Sleep(600 * time.Millisecond)
 					// mythic plus requests
 					// Гет запрос
 
@@ -211,10 +211,16 @@ func UpdateAllPlayers() {
 
 					// Делаем запрос на API
 					url := fmt.Sprintf("https://raider.io/api/v1/characters/profile?region=eu&realm=howling-fjord&name=%s&fields=mythic_plus_scores_by_season:current", encodedName)
-					respRio, err := http.Get(url)
-					if err != nil {
-						log.Fatal(err)
-					}
+
+					respRio := tryFetchRio(url)
+
+					// if err != nil {
+					// 	// Здесь убрал фатал чтобы не крашить приложение, скорее всего превысили ограничение на количество запросов поэтому просто сделаем таймаут.
+					// 	logger.Println("respRio: ", err)
+					// 	time.Sleep(120 * time.Second)
+					// 	// Пробуем еще раз через 2 минуты
+					// 	// respRio, _ = http.Get(url)
+					// }
 					defer respRio.Body.Close()
 
 					// Читаем данные из запроса
@@ -293,6 +299,17 @@ func UpdateAllPlayers() {
 	defer fmt.Println("UPDATE PLAYERS DONE")
 	defer file.Close()
 	defer pool.Close()
+}
+
+func tryFetchRio(url string) *http.Response {
+	resp, err := http.Get(url)
+	if err != nil {
+		logger.Println("Failed to fetch player data from API, trying again in 5 minutes")
+		logger.Println(url)
+		time.Sleep(5 * time.Minute)
+		tryFetchRio(url)
+	}
+	return resp
 }
 
 // Добавляем игрока в базу данных
