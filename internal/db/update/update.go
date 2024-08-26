@@ -208,9 +208,10 @@ func UpdateAllPlayers() {
 
 					// Кодирование имени персонажа в URL-кодированный формат, если не кодировать имя персонажа, то API вернет ошибку, почему не знаю.
 					encodedName := url.QueryEscape(player.name)
+					playeerGuild := url.QueryEscape(player.guild)
 
 					// Делаем запрос на API
-					url := fmt.Sprintf("https://raider.io/api/v1/characters/profile?region=eu&realm=howling-fjord&name=%s&fields=mythic_plus_scores_by_season:current", encodedName)
+					url := fmt.Sprintf("https://raider.io/api/v1/characters/profile?region=eu&realm=%s&name=%s&fields=mythic_plus_scores_by_season:current", playeerGuild, encodedName)
 
 					respRio := tryFetchRio(url)
 
