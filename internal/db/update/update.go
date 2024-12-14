@@ -213,10 +213,11 @@ func UpdateAllPlayers() {
 					// Кодирование имени персонажа в URL-кодированный формат, если не кодировать имя персонажа, то API вернет ошибку, почему не знаю.
 					fmt.Println("Имя игрока", player.name)
 					encodedName := url.QueryEscape(player.name)
-					playeerGuild := url.QueryEscape(player.guild)
+					playerRealm := url.QueryEscape(player.realm)
+					// playeerGuild := url.QueryEscape(player.guild)
 
 					// Делаем запрос на API
-					url := fmt.Sprintf("https://raider.io/api/v1/characters/profile?region=eu&realm=%s&name=%s&fields=mythic_plus_scores_by_season:current", playeerGuild, encodedName)
+					url := fmt.Sprintf("https://raider.io/api/v1/characters/profile?region=eu&realm=%s&name=%s&fields=mythic_plus_scores_by_season:current", playerRealm, encodedName)
 					fmt.Println("Делаем запрос на API", url)
 					respRio := tryFetchRio(url)
 
@@ -249,6 +250,7 @@ func UpdateAllPlayers() {
 						currRioRating = int(s.Int())
 					}
 					fmt.Println("Текущий рейтинг", currRioRating)
+					fmt.Println("Рейтинг в таблице", p.mythic_plus_scores_by_season)
 
 					// fmt.Println("О, привет:" + player.name + " " + p.name)
 					if player.rank != p.rank || p.mythic_plus_scores_by_season != currRioRating || player.guild != p.guild || player.realm != p.realm || player.race != p.race || player.gender != p.gender || player.achievementPoints != p.achievementPoints || player.profileURL != p.profileURL || player.profileBanner != p.profileBanner {
