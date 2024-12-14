@@ -38,6 +38,8 @@ func init() {
 	pool, err = pgxpool.NewWithConfig(ctx, connConfig)
 	if err != nil {
 		log.Fatalf("Unable to connect to database: %v\n", err)
+	} else {
+		fmt.Printf("Pool connected\n")
 	}
 
 	// Получение пути к домашнему каталогу
@@ -126,6 +128,8 @@ func UpdateAllPlayers() {
 	playerRows, err := pool.Query(context.Background(), playersFromDB)
 	if err != nil {
 		log.Fatalf("Can't get player names: %v\n", err)
+	} else {
+		fmt.Println("Player names got from database")
 	}
 	defer playerRows.Close()
 
@@ -207,12 +211,13 @@ func UpdateAllPlayers() {
 					// Гет запрос
 
 					// Кодирование имени персонажа в URL-кодированный формат, если не кодировать имя персонажа, то API вернет ошибку, почему не знаю.
+					fmt.Println("Имя игрока", player.name)
 					encodedName := url.QueryEscape(player.name)
 					playeerGuild := url.QueryEscape(player.guild)
 
 					// Делаем запрос на API
 					url := fmt.Sprintf("https://raider.io/api/v1/characters/profile?region=eu&realm=%s&name=%s&fields=mythic_plus_scores_by_season:current", playeerGuild, encodedName)
-
+					fmt.Println("Делаем запрос на API", url)
 					respRio := tryFetchRio(url)
 
 					// if err != nil {
@@ -243,10 +248,12 @@ func UpdateAllPlayers() {
 					for _, s := range playerRio.Array() {
 						currRioRating = int(s.Int())
 					}
+					fmt.Println("Текущий рейтинг", currRioRating)
 
 					// fmt.Println("О, привет:" + player.name + " " + p.name)
 					if player.rank != p.rank || p.mythic_plus_scores_by_season != currRioRating || player.guild != p.guild || player.realm != p.realm || player.race != p.race || player.gender != p.gender || player.achievementPoints != p.achievementPoints || player.profileURL != p.profileURL || player.profileBanner != p.profileBanner {
 						updateQuery := "UPDATE members SET "
+						fmt.Println("Провалилсь в условие", player.name, p.mythic_plus_scores_by_season, currRioRating)
 
 						var updates []string
 
