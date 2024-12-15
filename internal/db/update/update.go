@@ -25,6 +25,38 @@ var logger *log.Logger
 var file *os.File
 
 func init() {
+
+}
+
+type Player struct {
+	rank              int
+	name              string
+	guild             string
+	realm             string
+	race              string
+	class             string
+	gender            string
+	faction           string
+	achievementPoints int
+	profileURL        string
+	profileBanner     string
+}
+type PlayerDB struct {
+	rank                         int
+	name                         string
+	mythic_plus_scores_by_season int
+	guild                        string
+	realm                        string
+	race                         string
+	class                        string
+	gender                       string
+	faction                      string
+	achievementPoints            int
+	profileURL                   string
+	profileBanner                string
+}
+
+func UpdateAllPlayers() {
 	// Получаем конфигурацию соединения с БД
 	config.InitConfigDB()
 	dbUrl := viper.GetString("db.urlKvd")
@@ -62,37 +94,6 @@ func init() {
 		log.Fatal(err)
 	}
 	logger = log.New(file, "[UPDATEPlAYERS] ", log.LstdFlags|log.Lshortfile)
-}
-
-type Player struct {
-	rank              int
-	name              string
-	guild             string
-	realm             string
-	race              string
-	class             string
-	gender            string
-	faction           string
-	achievementPoints int
-	profileURL        string
-	profileBanner     string
-}
-type PlayerDB struct {
-	rank                         int
-	name                         string
-	mythic_plus_scores_by_season int
-	guild                        string
-	realm                        string
-	race                         string
-	class                        string
-	gender                       string
-	faction                      string
-	achievementPoints            int
-	profileURL                   string
-	profileBanner                string
-}
-
-func UpdateAllPlayers() {
 	fmt.Println("UPDATE PLAYERS STARTED")
 
 	// Получаем данные из API
@@ -218,7 +219,6 @@ func UpdateAllPlayers() {
 
 					// Делаем запрос на API
 					url := fmt.Sprintf("https://raider.io/api/v1/characters/profile?region=eu&realm=%s&name=%s&fields=mythic_plus_scores_by_season:current", playerRealm, encodedName)
-					fmt.Println("Делаем запрос на API", url)
 					respRio := tryFetchRio(url)
 
 					// if err != nil {
@@ -249,8 +249,6 @@ func UpdateAllPlayers() {
 					for _, s := range playerRio.Array() {
 						currRioRating = int(s.Int())
 					}
-					fmt.Println("Текущий рейтинг", currRioRating)
-					fmt.Println("Рейтинг в таблице", p.mythic_plus_scores_by_season)
 
 					// fmt.Println("О, привет:" + player.name + " " + p.name)
 					if player.rank != p.rank || p.mythic_plus_scores_by_season != currRioRating || player.guild != p.guild || player.realm != p.realm || player.race != p.race || player.gender != p.gender || player.achievementPoints != p.achievementPoints || player.profileURL != p.profileURL || player.profileBanner != p.profileBanner {
