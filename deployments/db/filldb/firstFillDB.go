@@ -6,24 +6,28 @@ package filldb
 import (
 	"context"
 	"fmt"
-	config "kvd/configs"
 	fetch "kvd/internal/api/raiderio"
 	"log"
 	"os"
 	"sync"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/spf13/viper"
 	"github.com/tidwall/gjson"
 )
 
 var pool *pgxpool.Pool
 var err error
+var ctx = context.Background()
 
 func init() {
-	config.InitConfigDB()
-	var ctx = context.Background()
-	dbUrl := viper.GetString("db.urlKvd")
+	// config.InitConfigDB()
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASS")
+	dbName := os.Getenv("DB_NAME")
+	fmt.Println(dbUser, dbPassword, dbName)
+	dbUrl := fmt.Sprintf("postgres://%s:%s@yanlex-wow-guild-postgres:5432/%s", dbUser, dbPassword, dbName)
+	fmt.Println(dbUrl)
+	// dbUrl := viper.GetString("db.urlKvd")
 	config, err := pgxpool.ParseConfig(dbUrl)
 	if err != nil {
 		log.Fatalf("Unable to parse config: %v", err)
@@ -82,7 +86,7 @@ func FirstFillDB() {
 		logger.Fatalf("Unable to create pool: %v", err)
 	}
 
-	ctx := context.Background()
+	// ctx := context.Background()
 	rows, err := pool.Query(ctx, "SELECT name FROM guild")
 	if err != nil {
 		log.Fatalf("Failed to execute query: %v\n", err)
@@ -139,7 +143,7 @@ func fillPlayers(resp string, file *os.File) {
 
 	totalMembers := gjson.Get(resp, "members.#")
 
-	ctx := context.Background()
+	// ctx := context.Background()
 	rows, err := pool.Query(ctx, "SELECT name FROM members")
 	if err != nil {
 		log.Fatalf("Failed to execute query: %v\n", err)
@@ -228,7 +232,7 @@ func fillPlayers(resp string, file *os.File) {
 }
 
 func insertObject(p Player) {
-	ctx := context.Background()
+	// ctx := context.Background()
 	// Вставка данных в таблицу members
 	_, err = pool.Exec(ctx, `
         INSERT INTO members (rank, name, guild, realm, race, class, gender, faction, achievement_points, profile_url, profile_banner, created_at)

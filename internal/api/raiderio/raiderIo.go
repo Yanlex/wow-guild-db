@@ -1,23 +1,31 @@
 package fetch
 
 import (
+	"fmt"
 	"io"
-	config "kvd/configs"
 	"log"
 	"net/http"
-
-	"github.com/spf13/viper"
+	"net/url"
+	"os"
 )
 
 func init() {
-	config.InitConfigDB()
+	// config.InitConfigDB()
 }
 
 func FetchRaiderIo() string {
 
 	// URL по кторому получаем данные
 	// КВД https://raider.io/api/v1/guilds/profile?region=eu&realm=howling-fjord&name=%D0%9A%D0%BB%D1%8E%D1%87%D0%B8%D0%BA%20%D0%B2%20%D0%B4%D1%83%D1%80%D0%BA%D1%83&fields=members
-	url := viper.GetString("guild.raiderio_api_url")
+	guildRegion := os.Getenv("GUILD_REGION")
+	guildRealm := os.Getenv("GUILD_REALM")
+	guildName := os.Getenv("GUILD_NAME")
+	encodeGuildName := url.QueryEscape(guildName)
+	encodeGuildRealm := url.QueryEscape(guildRealm)
+
+	url := fmt.Sprintf(`https://raider.io/api/v1/guilds/profile?region=%s&realm=%s&name=%s&fields=members`, guildRegion, encodeGuildRealm, encodeGuildName)
+	log.Printf("Make API request to %s\n", url)
+	// url := viper.GetString("guild.raiderio_api_url")
 
 	// Гет запрос
 	resp, err := http.Get(url)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	config "kvd/configs"
 	fetch "kvd/internal/api/raiderio"
 	"log"
 	"net/http"
@@ -15,7 +14,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/spf13/viper"
 	"github.com/tidwall/gjson"
 )
 
@@ -58,8 +56,15 @@ type PlayerDB struct {
 
 func UpdateAllPlayers() {
 	// Получаем конфигурацию соединения с БД
-	config.InitConfigDB()
-	dbUrl := viper.GetString("db.urlKvd")
+	// config.InitConfigDB()
+
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASS")
+	guildRegion := os.Getenv("GUILD_REGION")
+	guildDBName := os.Getenv("DB_NAME")
+	dbUrl := fmt.Sprintf("postgres://%s:%s@yanlex-wow-guild-postgres:5432/%s", dbUser, dbPassword, guildDBName)
+
+	// dbUrl := viper.GetString("db.urlKvd")
 	ctx = context.Background()
 	// fmt.Println(dbUrl)
 	connConfig, err := pgxpool.ParseConfig(dbUrl)
@@ -218,7 +223,7 @@ func UpdateAllPlayers() {
 					// playeerGuild := url.QueryEscape(player.guild)
 
 					// Делаем запрос на API
-					url := fmt.Sprintf("https://raider.io/api/v1/characters/profile?region=eu&realm=%s&name=%s&fields=mythic_plus_scores_by_season:current", playerRealm, encodedName)
+					url := fmt.Sprintf("https://raider.io/api/v1/characters/profile?region=%s&realm=%s&name=%s&fields=mythic_plus_scores_by_season:current", guildRegion, playerRealm, encodedName)
 					respRio := tryFetchRio(url)
 
 					// if err != nil {

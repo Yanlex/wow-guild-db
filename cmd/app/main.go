@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	config "kvd/configs"
 	deploy "kvd/deployments/db"
 	"kvd/internal/db/update"
 
@@ -22,8 +21,6 @@ func updatePlayersHandler() {
 
 func init() {
 	fmt.Println("DB UPDATER STARTED")
-
-	config.InitConfigDB()
 
 	// Крон планировщик
 	// Загрузка локации

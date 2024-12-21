@@ -11,5 +11,4 @@ func init() {
 
 func Deploy() {
 	structure.Init()
-
 }

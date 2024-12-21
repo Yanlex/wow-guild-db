@@ -5,31 +5,35 @@ package structure
 import (
 	"context"
 	"fmt"
-	config "kvd/configs"
 	filldb "kvd/deployments/db/filldb"
 	"log"
 	"os"
+	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/spf13/viper"
+	// "github.com/spf13/viper"
 )
 
 func Init() {
-	config.InitConfigDB()
-
 	// Конфигурация подключения
-	connConfig, err := pgx.ParseConfig(viper.GetString("db.url"))
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASS")
+	dbUrl := fmt.Sprintf("postgres://%s:%s@yanlex-wow-guild-postgres:5432", dbUser, dbPassword)
+	connConfig, err := pgx.ParseConfig(dbUrl)
 	if err != nil {
 		log.Fatalf("Configuration parsing error: %v\n", err)
 	}
 	dbBuild(connConfig)
 }
 
+var conn *pgx.Conn
+var retryDelay = 60 * time.Second
+
 func dbBuild(connConfig *pgx.ConnConfig) {
 	// Получение пути к домашнему каталогу
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	logFilePath := fmt.Sprintf("%s/kvd/logs/deploy.log", homeDir)
@@ -37,35 +41,44 @@ func dbBuild(connConfig *pgx.ConnConfig) {
 	// Создание всех необходимых каталогов, если они еще не существуют
 	err = os.MkdirAll(fmt.Sprintf("%s/kvd/logs", homeDir), 0755)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	// Создаем логирование в файл logs/update/updatePlayers.log
 	file, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 	defer file.Close()
 	logger := log.New(file, "[DEPLOY] ", log.LstdFlags|log.Lshortfile)
 
-	// Подключение
-	conn, err := pgx.ConnectConfig(context.Background(), connConfig)
-	if err != nil {
-		log.Fatalf("Error connecting to PostgreSQL: %v\n", err)
-		logger.Fatalf("Error connecting to PostgreSQL: %v\n", err)
+	// Попытка подключения, если ошибка, ждем и пытаемся еще раз
+	for {
+		conn, err = pgx.ConnectConfig(context.Background(), connConfig)
+		if err != nil {
+			log.Printf("Error connecting to PostgreSQL: %v\n", err)
+			logger.Printf("Error connecting to PostgreSQL: %v\n", err)
+			log.Printf("Retrying connection in %s...\n", retryDelay)
+			time.Sleep(retryDelay)
+		} else {
+			logger.Printf("Connected to PostgreSQL\n")
+			log.Printf("Connected to PostgreSQL\n")
+			break
+		}
 	}
+
 	// Закрыть соединение после выполнения функции
 	defer conn.Close(context.Background())
 
-	dbName := viper.GetString("dbCreateStructure.dbName")
+	dbName := os.Getenv("DB_NAME")
 
 	// Проверяем, существует ли база данных
 	checkDBExistsQuery := fmt.Sprintf("SELECT datname FROM pg_database WHERE datname = '%s'", dbName)
 	var existsDB string // Изменено с bool на string
 	err = conn.QueryRow(context.Background(), checkDBExistsQuery).Scan(&existsDB)
 	if err != nil && err != pgx.ErrNoRows {
-		log.Fatalf("Error checking if database exists: %v\n", err)
-		logger.Fatalf("Error checking if database exists: %v\n", err)
+		log.Printf("Error checking if database exists: %v\n", err)
+		logger.Printf("Error checking if database exists: %v\n", err)
 	}
 
 	if existsDB == "" { // Проверяем, что exists пустая строка, что означает отсутствие базы данных
@@ -75,7 +88,7 @@ func dbBuild(connConfig *pgx.ConnConfig) {
 		// Выполняем запрос
 		_, err = conn.Exec(context.Background(), createDBQuery)
 		if err != nil {
-			log.Fatalf("Failed to create database: %v\n", err)
+			log.Printf("Failed to create database: %v\n", err)
 			logger.Fatalf("Failed to create database: %s %v\n", dbName, err)
 		}
 		logger.Printf("The database: %s has been successfully created", dbName)
@@ -87,12 +100,26 @@ func dbBuild(connConfig *pgx.ConnConfig) {
 	}
 
 	// Подключение к базе данных kvd_guild
-	connConfig.Database = viper.GetString("dbCreateStructure.dbName")
+	connConfig.Database = os.Getenv("DB_NAME")
 	conn, err = pgx.ConnectConfig(context.Background(), connConfig)
 	if err != nil {
-		logger.Fatalf("Error connecting to a new database: %v\n", err)
-		log.Fatalf("Error connecting to a new database: %v\n", err)
+		logger.Printf("Error connecting to a new database: %v\n", err)
+		log.Printf("Error connecting to a new database: %v\n", err)
 	}
+	// for {
+	// 	conn, err = pgx.ConnectConfig(context.Background(), connConfig)
+
+	// 	if err == nil {
+	// 		logger.Printf("Connected to PostgreSQL\n")
+	// 		log.Printf("Connected to PostgreSQL\n")
+	// 		break
+	// 	} else {
+	// 		fmt.Printf("Error connecting to PostgreSQL: %v\n", err)
+	// 		logger.Fatalf("Error connecting to PostgreSQL: %v\n", err)
+	// 		fmt.Printf("Retrying connection in %s...\n", retryDelay)
+	// 		time.Sleep(retryDelay)
+	// 	}
+	// }
 	defer conn.Close(context.Background())
 
 	// SQL запрос для создания таблиц и столбцов в базе kvd_guild
@@ -130,6 +157,9 @@ func dbBuild(connConfig *pgx.ConnConfig) {
 	if err != nil {
 		log.Fatalf("Failed to create table: %v\n", err)
 		logger.Fatalf("Failed to create table: %v\n", err)
+	} else {
+		logger.Printf("The table has been successfully created\n")
+		log.Printf("The table has been successfully created\n")
 	}
 	defer filldb.FirstFillDB()
 }
