@@ -13,19 +13,19 @@
 
 ## Настраиваем конфигурацию приложения
 Настройки БД находятся в postgres-docker.yml
-    POSTGRES_USER: user-name
-    POSTGRES_PASSWORD: strong-password
+- POSTGRES_USER: user-name
+- POSTGRES_PASSWORD: strong-password
 
 Натросйки приложения находятся в файле backend-docker.yml
 Дефолтные переменные
-    DB_NAME: kvd_guild
-    GUILD_REGION: eu
-    GUILD_REALM: howling-fjord
-    GUILD_NAME: "Ключик в дурку"
-    DB_USER: user-name
-    DB_PASS: strong-password
-    DB_NETWORK: wowguild
-    HOST_DB_PORT: 5432
+- DB_NAME: kvd_guild
+- GUILD_REGION: eu
+- GUILD_REALM: howling-fjord
+- GUILD_NAME: "Ключик в дурку"
+- DB_USER: user-name
+- DB_PASS: strong-password
+- DB_NETWORK: wowguild
+- HOST_DB_PORT: 5432
 
 ### Настройка интервала обновления данных
 В файле main.go
