@@ -224,7 +224,10 @@ func UpdateAllPlayers() {
 
 					// Делаем запрос на API
 					url := fmt.Sprintf("https://raider.io/api/v1/characters/profile?region=%s&realm=%s&name=%s&fields=mythic_plus_scores_by_season:current", guildRegion, playerRealm, encodedName)
-					respRio := tryFetchRio(url)
+					respRio, err := tryFetchRio(url)
+					if err != nil {
+						log.Fatal(err)
+					}
 
 					// if err != nil {
 					// 	// Здесь убрал фатал чтобы не крашить приложение, скорее всего превысили ограничение на количество запросов поэтому просто сделаем таймаут.
@@ -314,15 +317,17 @@ func UpdateAllPlayers() {
 	defer pool.Close()
 }
 
-func tryFetchRio(url string) *http.Response {
-	resp, err := http.Get(url)
-	if err != nil {
-		logger.Println("Failed to fetch player data from API, trying again in 5 minutes")
-		logger.Println(url)
+// Ошибку возвращаем просто для практики.
+func tryFetchRio(url string) (*http.Response, error) {
+	for {
+		resp, err := http.Get(url)
+		if err == nil && resp.StatusCode == http.StatusOK {
+			return resp, nil
+		}
+		logger.Println("Failed to fetch player data from API, trying again in 5 minutes", url, err)
+		log.Println("Failed to fetch player data from API, trying again in 5 minutes", url, err)
 		time.Sleep(5 * time.Minute)
-		tryFetchRio(url)
 	}
-	return resp
 }
 
 // Добавляем игрока в базу данных

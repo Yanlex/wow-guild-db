@@ -7,10 +7,22 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 )
 
 func init() {
 	// config.InitConfigDB()
+}
+
+func tryFetchRio(url string) (*http.Response, error) {
+	for {
+		resp, err := http.Get(url)
+		if err == nil && resp.StatusCode == http.StatusOK {
+			return resp, nil
+		}
+		log.Println("Failed to fetch player data from API, trying again in 5 minutes", url, err)
+		time.Sleep(5 * time.Minute)
+	}
 }
 
 func FetchRaiderIo() string {
@@ -28,7 +40,7 @@ func FetchRaiderIo() string {
 	// url := viper.GetString("guild.raiderio_api_url")
 
 	// Гет запрос
-	resp, err := http.Get(url)
+	resp, err := tryFetchRio(url)
 	if err != nil {
 		log.Fatal(err)
 	}
