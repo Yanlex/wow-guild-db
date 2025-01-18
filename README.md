@@ -1,14 +1,13 @@
 ## Порядок запуска проекта
 - Postgres + Golang APP (updater) [yanlex-wow-guild-postgres + yanlex-wow-guild-updater](https://github.com/Yanlex/wow-guild-db )
 - Front + Nginx - [wow-guild-front-nginx](https://github.com/Yanlex/wow-guild-front-nginx)
-- ExpressJS API [yanlex-wow-guild-api](https://github.com/Yanlex/wow-guild-api-js )
 
 # Задача приложения
 Создание БД и работа с БД, в том числе обновление данных об игроках гильдии через API Raider io
-
+Собственное API к своей БД
 
 ### Docker контейнеры
-Создаем сеть в которой наши контейнеры будут общаться
+Если сеть еще не создана, создаем
 `docker network create wowguild`
 
 ## Настраиваем конфигурацию приложения
@@ -25,13 +24,16 @@
 - DB_USER: user-name
 - DB_PASS: strong-password
 - DB_NETWORK: wowguild
+- DB_ADDRESS: yanlex-wow-guild-postgres
 - HOST_DB_PORT: 5432
 
 ### Настройка интервала обновления данных
+Делает запросы к стороннему АПИ и сверяет есть ли изменения в данных игрока, например рейтинг м+ или количетсво ачивок.
 В файле main.go
-`_, _ = s.Every(1).Day().At("16:42").Do(updatePlayersHandler)`
+`_, _ = s.Every(1).Day().At("19:12").Do(updatePlayersHandler)`
 
 ### Логирование в файлы
+Это скорее просто для опыта реализовано минимально.
 Используем os.UserHomeDir() и основной путь /kvd/logs/ т.е создаем папку kvd в домашнем котологе пользователя куда будут писаться логи
 
 ### Запуск БД
@@ -40,3 +42,11 @@
 ### Запуск приложения
 Собираем проект, запускает backend-docker.yml который в свою очередь билдит backend.Dockerfile
 `docker compose -f backend-docker.yml up -d --build`
+
+
+## API
+Работает на 3000 порту
+/api/get-members
+/api/guild-data
+/api/avatar/
+/api/class/

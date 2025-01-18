@@ -16,7 +16,10 @@ services:
       DB_USER: user-name
       DB_PASS: strong-password
       DB_NETWORK: wowguild
+      DB_ADDRESS: yanlex-wow-guild-postgres
       HOST_DB_PORT: 5432
+    ports:
+      - "3000:3000"
     networks:
       - wowguild
 

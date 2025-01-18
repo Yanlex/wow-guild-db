@@ -24,9 +24,9 @@ func init() {
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASS")
 	dbName := os.Getenv("DB_NAME")
-	fmt.Println(dbUser, dbPassword, dbName)
-	dbUrl := fmt.Sprintf("postgres://%s:%s@yanlex-wow-guild-postgres:5432/%s", dbUser, dbPassword, dbName)
-	fmt.Println(dbUrl)
+	dbhost := os.Getenv("DB_ADDRESS")
+	dbPort := os.Getenv("HOST_DB_PORT")
+	dbUrl := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", dbUser, dbPassword, dbhost, dbPort, dbName)
 	// dbUrl := viper.GetString("db.urlKvd")
 	config, err := pgxpool.ParseConfig(dbUrl)
 	if err != nil {

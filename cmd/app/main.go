@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	a "kvd/cmd/api"
 	deploy "kvd/deployments/db"
 	"kvd/internal/db/update"
 
@@ -44,6 +45,7 @@ func init() {
 // var err error
 
 func main() {
+	a.Api()
 
 	timerDeploy := make(chan bool)
 	timerMplus := make(chan bool)

@@ -18,7 +18,9 @@ func Init() {
 	// Конфигурация подключения
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASS")
-	dbUrl := fmt.Sprintf("postgres://%s:%s@yanlex-wow-guild-postgres:5432", dbUser, dbPassword)
+	dbhost := os.Getenv("DB_ADDRESS")
+	dbPort := os.Getenv("HOST_DB_PORT")
+	dbUrl := fmt.Sprintf("postgres://%s:%s@%s:%s", dbUser, dbPassword, dbhost, dbPort)
 	connConfig, err := pgx.ParseConfig(dbUrl)
 	if err != nil {
 		log.Fatalf("Configuration parsing error: %v\n", err)

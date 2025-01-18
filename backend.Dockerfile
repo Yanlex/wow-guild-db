@@ -1,21 +1,21 @@
-# Используйте официальный образ Go
+# Официальный образ Go
 FROM golang:1.22.1-alpine
 
-# Установите рабочую директорию в контейнере
+# Рабочая директория в контейнере
 WORKDIR /app
 
-# Копируйте go.mod и go.sum
+# Копировать go.mod и go.sum
 COPY go.mod go.sum ./
 
-# Загрузите зависимости
+# Загрузить зависимости
 RUN go mod download
 
-# Копируйте остальные части проекта
+# Копируем проект
+COPY assets/class /root/assets/class
 COPY cmd ./cmd
 COPY configs ./configs
 COPY deployments ./deployments
 COPY internal ./internal
-# Копируйте пользовательский конфигурационный файл из хоста в контейнер
 
 # Сборка приложения
 RUN go build -o ./ ./cmd/app/main.go

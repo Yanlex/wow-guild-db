@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -20,13 +21,15 @@ import (
 var pool *pgxpool.Pool
 var ctx context.Context
 var logger *log.Logger
-var file *os.File
+var digitRegex = regexp.MustCompile(`\d`) // Компилируем регулярное выражение один раз
+
+// var file *os.File
 
 func init() {
 
 }
 
-type Player struct {
+type PlayerBase struct {
 	rank              int
 	name              string
 	guild             string
@@ -51,6 +54,7 @@ type PlayerDB struct {
 	faction                      string
 	achievementPoints            int
 	profileURL                   string
+	thumbnail_url                string
 	profileBanner                string
 }
 
@@ -62,7 +66,9 @@ func UpdateAllPlayers() {
 	dbPassword := os.Getenv("DB_PASS")
 	guildRegion := os.Getenv("GUILD_REGION")
 	guildDBName := os.Getenv("DB_NAME")
-	dbUrl := fmt.Sprintf("postgres://%s:%s@yanlex-wow-guild-postgres:5432/%s", dbUser, dbPassword, guildDBName)
+	dbhost := os.Getenv("DB_ADDRESS")
+	dbPort := os.Getenv("HOST_DB_PORT")
+	dbUrl := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", dbUser, dbPassword, dbhost, dbPort, guildDBName)
 
 	// dbUrl := viper.GetString("db.urlKvd")
 	ctx = context.Background()
@@ -108,7 +114,7 @@ func UpdateAllPlayers() {
 	}
 
 	// Получаем из Базы данных таблицу members
-	rows, err := pool.Query(context.Background(), "SELECT  rank, name, mythic_plus_scores_by_season, guild, realm, race, class, gender, faction, achievement_points, profile_url, profile_banner FROM members")
+	rows, err := pool.Query(context.Background(), "SELECT rank, name, mythic_plus_scores_by_season, guild, realm, race, class, gender, faction, achievement_points, profile_url,thumbnail_url, profile_banner FROM members")
 	if err != nil {
 		log.Fatalf("Query error: %v\n", err)
 	}
@@ -118,7 +124,7 @@ func UpdateAllPlayers() {
 	for rows.Next() {
 
 		var player PlayerDB
-		if err := rows.Scan(&player.rank, &player.name, &player.mythic_plus_scores_by_season, &player.guild, &player.realm, &player.race, &player.class, &player.gender, &player.faction, &player.achievementPoints, &player.profileURL, &player.profileBanner); err != nil {
+		if err := rows.Scan(&player.rank, &player.name, &player.mythic_plus_scores_by_season, &player.guild, &player.realm, &player.race, &player.class, &player.gender, &player.faction, &player.achievementPoints, &player.profileURL, &player.thumbnail_url, &player.profileBanner); err != nil {
 			log.Fatal(err)
 		}
 
@@ -186,7 +192,7 @@ func UpdateAllPlayers() {
 		profileBannerPath := fmt.Sprintf("members.%d.character.profile_banner", i)
 		profile_banner := gjson.Get(resp, profileBannerPath)
 
-		player := Player{
+		player := PlayerBase{
 			rank:              int(rank.Int()),
 			name:              name.String(),
 			guild:             guild,
@@ -203,8 +209,9 @@ func UpdateAllPlayers() {
 		// mythic_plus_scores_by_season
 		// https://raider.io/api/v1/characters/profile?region=eu&realm=howling-fjord&name=%D0%A7%D0%BE%D1%81%D0%BA%D0%B8&fields=mythic_plus_scores_by_season%3Acurrent
 		found2 := slices.Contains(playerNames, player.name)
+		match := digitRegex.MatchString(player.name)
 
-		if found2 {
+		if found2 && !match {
 
 			// fmt.Println("Found", player.name)
 			// Это итеррация по всей полученной таблице members
@@ -212,7 +219,7 @@ func UpdateAllPlayers() {
 				// fmt.Println(p.rank, p.name, p.guild, p.realm, p.race, p.class, p.gender, p.faction, p.achievementPoints, p.profileURL, p.profileBanner)
 				if player.name == p.name {
 					// time sleep нужыен из за ограничения запросов на стороний API
-					time.Sleep(600 * time.Millisecond)
+					time.Sleep(900 * time.Millisecond)
 					// mythic plus requests
 					// Гет запрос
 
@@ -258,8 +265,12 @@ func UpdateAllPlayers() {
 						currRioRating = int(s.Int())
 					}
 
+					// Достаем thumbnail_url
+					playerThumbnailUrl := gjson.Get(playerResp, "thumbnail_url")
+					playerThumbnailUrlString := playerThumbnailUrl.String()
+
 					// fmt.Println("О, привет:" + player.name + " " + p.name)
-					if player.rank != p.rank || p.mythic_plus_scores_by_season != currRioRating || player.guild != p.guild || player.realm != p.realm || player.race != p.race || player.gender != p.gender || player.achievementPoints != p.achievementPoints || player.profileURL != p.profileURL || player.profileBanner != p.profileBanner {
+					if p.thumbnail_url == "" || player.rank != p.rank || p.mythic_plus_scores_by_season != currRioRating || player.guild != p.guild || player.realm != p.realm || player.race != p.race || player.gender != p.gender || player.achievementPoints != p.achievementPoints || player.profileURL != p.profileURL || player.profileBanner != p.profileBanner {
 						updateQuery := "UPDATE members SET "
 						fmt.Println("Провалилсь в условие", player.name, p.mythic_plus_scores_by_season, currRioRating)
 
@@ -269,27 +280,30 @@ func UpdateAllPlayers() {
 							updates = append(updates, fmt.Sprintf(`rank = '%d'`, player.rank)) // Использование двойных кавычек для строки и %s для интерполяции
 						}
 						if player.guild != guild {
-							updates = append(updates, fmt.Sprintf("guild = '%s'", player.guild)) // Аналогично
+							updates = append(updates, fmt.Sprintf("guild = '%s'", player.guild))
 						}
 						if player.realm != p.realm {
-							updates = append(updates, fmt.Sprintf("realm = '%s'", player.realm)) // Аналогично
+							updates = append(updates, fmt.Sprintf("realm = '%s'", player.realm))
 						}
 						if player.race != p.race && player.race != "Mag'har Orc" {
 							raceFix := strings.ReplaceAll(player.race, "'", " ")
-							updates = append(updates, fmt.Sprintf("race = '%s'", raceFix)) // Аналогично
+							updates = append(updates, fmt.Sprintf("race = '%s'", raceFix))
 						}
 						if player.gender != p.gender {
-							updates = append(updates, fmt.Sprintf("gender = '%s'", player.gender)) // Аналогично
+							updates = append(updates, fmt.Sprintf("gender = '%s'", player.gender))
 						}
 						if player.achievementPoints != p.achievementPoints {
-							updates = append(updates, fmt.Sprintf("achievement_points = '%d'", player.achievementPoints)) // Аналогично
+							updates = append(updates, fmt.Sprintf("achievement_points = '%d'", player.achievementPoints))
 						}
 						if player.profileURL != p.profileURL {
-							updates = append(updates, fmt.Sprintf("profile_url = '%s'", player.profileURL)) // Аналогично
+							updates = append(updates, fmt.Sprintf("profile_url = '%s'", player.profileURL))
 						}
 
 						if p.mythic_plus_scores_by_season != currRioRating {
 							updates = append(updates, fmt.Sprintf("mythic_plus_scores_by_season = '%d'", currRioRating))
+						}
+						if p.thumbnail_url == "" {
+							updates = append(updates, fmt.Sprintf("thumbnail_url = '%s'", playerThumbnailUrlString))
 						}
 
 						if len(updates) > 0 {
@@ -331,7 +345,7 @@ func tryFetchRio(url string) (*http.Response, error) {
 }
 
 // Добавляем игрока в базу данных
-func insertObject(p Player, pool *pgxpool.Pool) {
+func insertObject(p PlayerBase, pool *pgxpool.Pool) {
 	ctx := context.Background()
 	// Вставка данных в таблицу members
 	_, err := pool.Exec(ctx, `
