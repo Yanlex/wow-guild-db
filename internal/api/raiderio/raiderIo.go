@@ -42,7 +42,7 @@ func FetchRaiderIo() string {
 	// Гет запрос
 	resp, err := tryFetchRio(url)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 	defer resp.Body.Close()
 

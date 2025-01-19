@@ -124,19 +124,20 @@ func Api() {
 	// Создаем новый ServeMux для маршрутизации HTTP запросов.
 	mux := http.NewServeMux()
 
-	// Аватарки
+	// Папка с аватарками jpg
 	playerAvatars := http.FileServer(http.Dir(foldierPath))
+	// Папка с классами jpg
 	playerClass := http.FileServer(http.Dir(playerClass))
 	/*
 		РОУТЫ
 	*/
 	// Список игроков
 	mux.HandleFunc("GET /api/get-members", getMembers)
-	//
+	// API ручка, отдаем Rank, Name, Mythic Rating, Guild, Class
 	mux.HandleFunc("GET /api/guild-data", getData)
-	// Обрабатываем запросы к аватаркам
+	// Шарим папку с аватарками в WEB
 	mux.Handle("/api/avatar/", http.StripPrefix("/api/avatar/", playerAvatars))
-	// Обрабатываем запросы к классам
+	// Шарим папку с классами в WEB
 	mux.Handle("/api/class/", http.StripPrefix("/api/class/", playerClass))
 
 	log.Println("Api сервер запущен на порте: 3000")

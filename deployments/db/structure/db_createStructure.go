@@ -23,7 +23,7 @@ func Init() {
 	dbUrl := fmt.Sprintf("postgres://%s:%s@%s:%s", dbUser, dbPassword, dbhost, dbPort)
 	connConfig, err := pgx.ParseConfig(dbUrl)
 	if err != nil {
-		log.Fatalf("Configuration parsing error: %v\n", err)
+		log.Println("Ошибка в конфигурации: %v\n", err)
 	}
 	dbBuild(connConfig)
 }
@@ -58,13 +58,13 @@ func dbBuild(connConfig *pgx.ConnConfig) {
 	for {
 		conn, err = pgx.ConnectConfig(context.Background(), connConfig)
 		if err != nil {
-			log.Printf("Error connecting to PostgreSQL: %v\n", err)
-			logger.Printf("Error connecting to PostgreSQL: %v\n", err)
-			log.Printf("Retrying connection in %s...\n", retryDelay)
+			log.Printf("Ошибка подключения к PostgreSQL: %v\n", err)
+			logger.Printf("Ошибка подключения к PostgreSQL: %v\n", err)
+			log.Printf("Пытаемся переподключиться %s...\n", retryDelay)
 			time.Sleep(retryDelay)
 		} else {
-			logger.Printf("Connected to PostgreSQL\n")
-			log.Printf("Connected to PostgreSQL\n")
+			logger.Printf("Успешно подключились к PostgreSQL\n")
+			log.Printf("Успешно подключились к PostgreSQL\n")
 			break
 		}
 	}
@@ -79,8 +79,8 @@ func dbBuild(connConfig *pgx.ConnConfig) {
 	var existsDB string // Изменено с bool на string
 	err = conn.QueryRow(context.Background(), checkDBExistsQuery).Scan(&existsDB)
 	if err != nil && err != pgx.ErrNoRows {
-		log.Printf("Error checking if database exists: %v\n", err)
-		logger.Printf("Error checking if database exists: %v\n", err)
+		log.Printf("Ошибка проверки существования базы данных: %v\n", err)
+		logger.Printf("Ошибка проверки существования базы данных: %v\n", err)
 	}
 
 	if existsDB == "" { // Проверяем, что exists пустая строка, что означает отсутствие базы данных
@@ -90,14 +90,14 @@ func dbBuild(connConfig *pgx.ConnConfig) {
 		// Выполняем запрос
 		_, err = conn.Exec(context.Background(), createDBQuery)
 		if err != nil {
-			log.Printf("Failed to create database: %v\n", err)
-			logger.Fatalf("Failed to create database: %s %v\n", dbName, err)
+			log.Printf("Ошибка при создании БД: %v\n", err)
+			logger.Println("Ошибка при создании БД: %s %v\n", dbName, err)
 		}
-		logger.Printf("The database: %s has been successfully created", dbName)
-		log.Printf("The database: %s has been successfully created\n", dbName)
+		logger.Printf("БД: %s успешно создана", dbName)
+		log.Printf("БД: %s успешно создана\n", dbName)
 	} else {
-		logger.Printf("The database: %s already exists", dbName)
-		log.Printf("The database: %s already exists\n", dbName)
+		logger.Printf("БД: %s уже существует", dbName)
+		log.Printf("БД: %s уже существует\n", dbName)
 		// Удаление комментариев о необходимости удаления базы данных перед созданием, так как это не требуется
 	}
 
@@ -105,8 +105,8 @@ func dbBuild(connConfig *pgx.ConnConfig) {
 	connConfig.Database = os.Getenv("DB_NAME")
 	conn, err = pgx.ConnectConfig(context.Background(), connConfig)
 	if err != nil {
-		logger.Printf("Error connecting to a new database: %v\n", err)
-		log.Printf("Error connecting to a new database: %v\n", err)
+		logger.Printf("Ошибка подключения к новой БД: %v\n", err)
+		log.Printf("Ошибка подключения к новой БД: %v\n", err)
 	}
 	// for {
 	// 	conn, err = pgx.ConnectConfig(context.Background(), connConfig)
@@ -157,11 +157,11 @@ func dbBuild(connConfig *pgx.ConnConfig) {
 
 	_, err = conn.Exec(context.Background(), createTableAndRow)
 	if err != nil {
-		log.Fatalf("Failed to create table: %v\n", err)
-		logger.Fatalf("Failed to create table: %v\n", err)
+		log.Println("Ошибка при создании таблицы: %v\n", err)
+		logger.Println("Ошибка при создании таблицы: %v\n", err)
 	} else {
-		logger.Printf("The table has been successfully created\n")
-		log.Printf("The table has been successfully created\n")
+		logger.Printf("Таблица успешно создана\n")
+		log.Printf("Таблица успешно создана\n")
 	}
 	defer filldb.FirstFillDB()
 }

@@ -43,6 +43,8 @@ func GetAll() []byte {
 	err = db.Ping()
 	if err != nil {
 		log.Println("Ошибка пинга к БД", err)
+	} else {
+		log.Println("Успешно подключились к базе данных")
 	}
 
 	// Выполняем запрос

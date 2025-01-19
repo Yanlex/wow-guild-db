@@ -46,7 +46,11 @@
 
 ## API
 Работает на 3000 порту
+Возвращает список игроков гильдии
 /api/get-members
+Возвращает Rank, Name, Mythic Rating, Guild, Class
 /api/guild-data
+Шарим папку с аватарками
 /api/avatar/
+Шарим папку с классами
 /api/class/

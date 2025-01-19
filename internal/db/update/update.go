@@ -75,20 +75,20 @@ func UpdateAllPlayers() {
 	// fmt.Println(dbUrl)
 	connConfig, err := pgxpool.ParseConfig(dbUrl)
 	if err != nil {
-		log.Fatalf("Configuration parsing error: %v\n", err)
+		log.Println("Ошибка в конфигурации: %v\n", err)
 	}
 	// Создаем пул соединений
 	pool, err = pgxpool.NewWithConfig(ctx, connConfig)
 	if err != nil {
-		log.Fatalf("Unable to connect to database: %v\n", err)
+		log.Println("Ошибка подключения к БД: %v\n", err)
 	} else {
-		fmt.Printf("Pool connected\n")
+		fmt.Printf("Успешно подключились к БД\n")
 	}
 
 	// Получение пути к домашнему каталогу
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	logFilePath := fmt.Sprintf("%s/kvd/logs/updatePlayers.log", homeDir)
@@ -96,27 +96,27 @@ func UpdateAllPlayers() {
 	// Создание всех необходимых каталогов, если они еще не существуют
 	err = os.MkdirAll(fmt.Sprintf("%s/kvd/logs", homeDir), 0755)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	// Создаем логирование в файл logs/update/updatePlayers.log
 	file, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 	logger = log.New(file, "[UPDATEPlAYERS] ", log.LstdFlags|log.Lshortfile)
-	fmt.Println("UPDATE PLAYERS STARTED")
+	fmt.Println("Обновление данных игроков начато")
 
 	// Получаем данные из API
 	resp := fetch.FetchRaiderIo()
 	if resp == "" {
-		log.Fatalf("Failed to fetch data from API")
+		log.Println("Ошибка подключения к API")
 	}
 
 	// Получаем из Базы данных таблицу members
 	rows, err := pool.Query(context.Background(), "SELECT rank, name, mythic_plus_scores_by_season, guild, realm, race, class, gender, faction, achievement_points, profile_url,thumbnail_url, profile_banner FROM members")
 	if err != nil {
-		log.Fatalf("Query error: %v\n", err)
+		log.Println("Ошибка в запросе к БД: %v\n", err)
 	}
 	defer rows.Close()
 
@@ -125,13 +125,13 @@ func UpdateAllPlayers() {
 
 		var player PlayerDB
 		if err := rows.Scan(&player.rank, &player.name, &player.mythic_plus_scores_by_season, &player.guild, &player.realm, &player.race, &player.class, &player.gender, &player.faction, &player.achievementPoints, &player.profileURL, &player.thumbnail_url, &player.profileBanner); err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
 
 		players = append(players, player)
 
 		if err := rows.Err(); err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
 	}
 
@@ -139,9 +139,9 @@ func UpdateAllPlayers() {
 	playersFromDB := `SELECT name FROM members;`
 	playerRows, err := pool.Query(context.Background(), playersFromDB)
 	if err != nil {
-		log.Fatalf("Can't get player names: %v\n", err)
+		log.Println("Ошибка, Не могу получить список игроков: %v\n", err)
 	} else {
-		fmt.Println("Player names got from database")
+		fmt.Println("Успешно получен список игроков из БД")
 	}
 	defer playerRows.Close()
 
@@ -151,7 +151,7 @@ func UpdateAllPlayers() {
 		var name string
 		err := playerRows.Scan(&name)
 		if err != nil {
-			log.Fatalf("Scan error: %v\n", err)
+			log.Println("Scan error: %v\n", err)
 		}
 		playerNames = append(playerNames, name)
 	}
@@ -233,7 +233,7 @@ func UpdateAllPlayers() {
 					url := fmt.Sprintf("https://raider.io/api/v1/characters/profile?region=%s&realm=%s&name=%s&fields=mythic_plus_scores_by_season:current", guildRegion, playerRealm, encodedName)
 					respRio, err := tryFetchRio(url)
 					if err != nil {
-						log.Fatal(err)
+						log.Println(err)
 					}
 
 					// if err != nil {
@@ -248,13 +248,13 @@ func UpdateAllPlayers() {
 					// Читаем данные из запроса
 					body, err := io.ReadAll(respRio.Body)
 					if err != nil {
-						log.Fatal(err)
+						log.Println(err)
 					}
 
 					// Преобразование в строку
 					playerResp := string(body)
 					if playerResp == "" {
-						log.Fatalf("Failed to fetch player data from API")
+						log.Println("Failed to fetch player data from API")
 					}
 
 					// Достаем текущий рейтинг из gjson.Response
@@ -272,7 +272,7 @@ func UpdateAllPlayers() {
 					// fmt.Println("О, привет:" + player.name + " " + p.name)
 					if p.thumbnail_url == "" || player.rank != p.rank || p.mythic_plus_scores_by_season != currRioRating || player.guild != p.guild || player.realm != p.realm || player.race != p.race || player.gender != p.gender || player.achievementPoints != p.achievementPoints || player.profileURL != p.profileURL || player.profileBanner != p.profileBanner {
 						updateQuery := "UPDATE members SET "
-						fmt.Println("Провалилсь в условие", player.name, p.mythic_plus_scores_by_season, currRioRating)
+						fmt.Println("Провалилсь в условие", player.name)
 
 						var updates []string
 
@@ -312,9 +312,9 @@ func UpdateAllPlayers() {
 							fmt.Println(updateQuery)
 							_, err := pool.Exec(ctx, updateQuery)
 							if err != nil {
-								log.Fatal(err)
+								log.Println(err)
 							} else {
-								logger.Println("Updated: ", player.name, updateQuery)
+								logger.Println("Обновили данные игрока: ", player.name, updateQuery)
 							}
 						}
 					}
@@ -322,11 +322,11 @@ func UpdateAllPlayers() {
 			}
 		} else {
 			// fmt.Println(playerJson)
-			logger.Println("Player ", name.String(), `not found in players list starting insert`)
+			logger.Println("Игрок ", name.String(), `не найден в БД, вносим нового игрока.`)
 			insertObject(player, pool)
 		}
 	}
-	defer fmt.Println("UPDATE PLAYERS DONE")
+	defer fmt.Println("Программа обновления данных игроков завершилась")
 	defer file.Close()
 	defer pool.Close()
 }
@@ -338,8 +338,8 @@ func tryFetchRio(url string) (*http.Response, error) {
 		if err == nil && resp.StatusCode == http.StatusOK {
 			return resp, nil
 		}
-		logger.Println("Failed to fetch player data from API, trying again in 5 minutes", url, err)
-		log.Println("Failed to fetch player data from API, trying again in 5 minutes", url, err)
+		logger.Println("Ошибка при запросе к API, повторная попытка через 5 минут", url, err)
+		log.Println("Ошибка при запросе к API, повторная попытка через 5 минут", url, err)
 		time.Sleep(5 * time.Minute)
 	}
 }
@@ -353,8 +353,8 @@ func insertObject(p PlayerBase, pool *pgxpool.Pool) {
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
     `, p.rank, p.name, p.guild, p.realm, p.race, p.class, p.gender, p.faction, p.achievementPoints, p.profileURL, p.profileBanner)
 	if err != nil {
-		logger.Println("Can't add player: ", p.name, `to database`, err)
+		logger.Println("Ошибка добавления игрока: ", p.name, `в БД`, err)
 	} else {
-		logger.Println("Player ", p.name, `added to database`)
+		logger.Println("Игрок ", p.name, `добавлен в БД`)
 	}
 }

@@ -16,19 +16,19 @@ import (
 )
 
 func updatePlayersHandler() {
-	fmt.Println("CRON TASK STARTED")
+	fmt.Println("Задача CRON запущена")
 	update.UpdateAllPlayers()
 }
 
 func init() {
-	fmt.Println("DB UPDATER STARTED")
+	fmt.Println("Программа Updater запущена")
 
 	// Крон планировщик
 	// Загрузка локации
 	est, err := time.LoadLocation("Europe/Moscow")
 	if err != nil {
 		// Логирование ошибки вместо паники
-		log.Printf("Error loading location: %v", err)
+		log.Printf("Ошибка загрзуки региона: %v", err)
 		return
 	}
 
@@ -72,5 +72,5 @@ func main() {
 	update.UpdateAllPlayers()
 	// Блокируемся до получения сигнала
 	sig := <-signals
-	fmt.Println("Received signal:", sig)
+	fmt.Println("Получен сигнал, закрываем программу:", sig)
 }

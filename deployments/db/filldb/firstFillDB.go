@@ -30,11 +30,11 @@ func init() {
 	// dbUrl := viper.GetString("db.urlKvd")
 	config, err := pgxpool.ParseConfig(dbUrl)
 	if err != nil {
-		log.Fatalf("Unable to parse config: %v", err)
+		log.Println("Ошибка в конфигурации подключения к БД: %v", err)
 	}
 	pool, err = pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
-		log.Fatalf("Unable to connect to database: %v", err)
+		log.Println("Ошибка подключения к БД %v", err)
 	}
 }
 
@@ -56,7 +56,7 @@ func FirstFillDB() {
 	// Получение пути к домашнему каталогу
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	logFilePath := fmt.Sprintf("%s/kvd/logs/deploy.log", homeDir)
@@ -64,13 +64,13 @@ func FirstFillDB() {
 	// Создание всех необходимых каталогов, если они еще не существуют
 	err = os.MkdirAll(fmt.Sprintf("%s/kvd/logs", homeDir), 0755)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	// Создаем логирование в файл logs/update/updatePlayers.log
 	file, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 	defer file.Close()
 
@@ -78,18 +78,18 @@ func FirstFillDB() {
 
 	resp := fetch.FetchRaiderIo()
 	if resp == "" {
-		log.Fatalf("Failed to fetch data from API")
-		logger.Fatalf("Failed to fetch data from API")
+		log.Println("Ошибка получения данных из API")
+		logger.Println("Ошибка получения данных из API")
 	}
-	if err != nil {
-		log.Fatalf("Unable to create pool: %v", err)
-		logger.Fatalf("Unable to create pool: %v", err)
-	}
+	// if err != nil {
+	// 	log.Fatalf("Unable to create pool: %v", err)
+	// 	logger.Fatalf("Unable to create pool: %v", err)
+	// }
 
 	// ctx := context.Background()
 	rows, err := pool.Query(ctx, "SELECT name FROM guild")
 	if err != nil {
-		log.Fatalf("Failed to execute query: %v\n", err)
+		log.Println("Ошибка в запросе к БД: %v\n", err)
 	}
 	defer rows.Close()
 
@@ -106,8 +106,8 @@ func FirstFillDB() {
 		// Имя гильдии
 		name := gjson.Get(resp, "name").String()
 		if name == "" {
-			logger.Println("Failed to extract name from API response")
-			log.Fatalf("Failed to extract name from API response")
+			logger.Println("Ошибка при попытке извлечь имя игрока", err)
+			log.Println("Ошибка при попытке извлечь имя игрока", err)
 		}
 
 		// Фракция
@@ -128,12 +128,12 @@ func FirstFillDB() {
         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
     `, name, faction, region, realm, profile_url)
 		if err != nil {
-			logger.Printf("Failed to insert data: %v", err)
-			log.Fatalf("Failed to insert data: %v", err)
+			logger.Printf("Ошибка, не удалось вставить данные: %v", err)
+			log.Println("Ошибка, не удалось вставить данные: %v", err)
 		}
-		defer log.Println("Guild data inserted successfully")
+		defer log.Println("Успех, данные гильдии добавлены")
 	} else {
-		log.Println("Guild table, some rows already exist, next step")
+		log.Println("Похоже данные в БД уже сущесуют, идем дальше")
 	}
 	defer fillPlayers(resp, file)
 }
@@ -146,7 +146,7 @@ func fillPlayers(resp string, file *os.File) {
 	// ctx := context.Background()
 	rows, err := pool.Query(ctx, "SELECT name FROM members")
 	if err != nil {
-		log.Fatalf("Failed to execute query: %v\n", err)
+		log.Println("Ошибка, не удалось выполнить запрос: %v\n", err)
 	}
 	defer rows.Close()
 
@@ -223,9 +223,9 @@ func fillPlayers(resp string, file *os.File) {
 			}(player)
 		}
 		wg.Wait()
-		defer log.Println("We did fill players")
+		defer log.Println("Данные об игроках гильдии успешно вставлены в БД")
 	} else {
-		defer log.Println("We didnt fill players")
+		defer log.Println("Похоже в БД уже есть данные об игроках, идем дальше.")
 	}
 	defer file.Close()
 
@@ -239,7 +239,8 @@ func insertObject(p Player) {
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
     `, p.rank, p.name, p.guild, p.realm, p.race, p.class, p.gender, p.faction, p.achievementPoints, p.profileURL, p.profileBanner)
 	if err != nil {
-		log.Fatalf("Failed to insert data: %v\n", err)
+		log.Println("Ошибка, не удалось добавить игрока: %v\n", err)
+		log.Println(p)
 	}
 
 }
