@@ -21,8 +21,6 @@ func updatePlayersHandler() {
 }
 
 func init() {
-	fmt.Println("Программа Updater запущена")
-
 	// Крон планировщик
 	// Загрузка локации
 	est, err := time.LoadLocation("Europe/Moscow")
@@ -45,13 +43,10 @@ func init() {
 // var err error
 
 func main() {
-	a.Api()
-
 	timerDeploy := make(chan bool)
-	timerMplus := make(chan bool)
 
 	go func() {
-		time.Sleep(10 * time.Second)
+		time.Sleep(1 * time.Second)
 		timerDeploy <- true
 	}()
 
@@ -62,14 +57,11 @@ func main() {
 
 	<-timerDeploy
 	deploy.Deploy()
-
-	go func() {
-		time.Sleep(25 * time.Second)
-		timerMplus <- true
-	}()
-
-	<-timerMplus
-	update.UpdateAllPlayers()
+	time.Sleep(1 * time.Second)
+	go update.UpdateAllPlayers()
+	log.Println("Backend запущен")
+	time.Sleep(2 * time.Second)
+	go a.Api()
 	// Блокируемся до получения сигнала
 	sig := <-signals
 	fmt.Println("Получен сигнал, закрываем программу:", sig)

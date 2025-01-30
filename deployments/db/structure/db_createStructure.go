@@ -23,7 +23,7 @@ func Init() {
 	dbUrl := fmt.Sprintf("postgres://%s:%s@%s:%s", dbUser, dbPassword, dbhost, dbPort)
 	connConfig, err := pgx.ParseConfig(dbUrl)
 	if err != nil {
-		log.Println("Ошибка в конфигурации: %v\n", err)
+		log.Printf("Ошибка в конфигурации: %v\n", err)
 	}
 	dbBuild(connConfig)
 }
